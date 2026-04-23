@@ -1,0 +1,39 @@
+---
+description: Forwarder System 项目级规则，所有对话自动应用
+alwaysApply: true
+---
+
+# Forwarder System 项目规则
+
+## 必读
+- 任何新对话开始前，先读 `AGENTS.md` 与最近的 `docs/plans/*.md`
+- 修改代码前，先读对应模块的现有实现，不要重写无关代码
+
+## 隔离与端口
+- 本项目固定端口 **6419**，不要改动
+- 不要触碰 `localhost:3000` 上"智能货运报价系统"的文件（在另一个目录）
+- 不同项目必须用不同端口 + 不同文件夹物理隔离
+
+## 技术栈约束
+- Next.js 14 App Router + TypeScript（严格模式）+ Tailwind + shadcn/ui
+- 数据库：开发用 SQLite，生产 PostgreSQL，通过 Prisma + `DATABASE_URL` 切换
+- 包管理器：**pnpm**（不要用 npm/yarn 命令）
+- 表单校验：`react-hook-form` + `zod`
+
+## 编码规范
+- 金额字段一律 `Decimal`（Prisma）/ `string`（前端），禁止 `number`
+- 时间统一 UTC 存储
+- API 路径走 RESTful：`/api/customers`、`/api/orders/[id]/fees`
+- 不写无意义注释（不要解释"这里循环"这种废话）
+- 函数/变量命名英文，UI 文案中文
+
+## 工作流
+- 任何"新功能"先列出修改清单，确认后再动手
+- 改完必须能 `pnpm build` 不报错
+- 新增依赖前先确认 `package.json` 没有
+- 不要随意 `git commit`，除非用户明确要求
+
+## 数据安全
+- 所有破坏性 SQL（DROP、TRUNCATE）必须先确认
+- `prisma migrate reset` 之前必须先备份 `prisma/dev.db`
+- 生产环境数据库连接串只放 `.env.production`，不要进 git

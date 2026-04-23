@@ -1,0 +1,235 @@
+// Forwarder System Prisma Schema
+// Dev: SQLite, Prod: PostgreSQL — switch via DATABASE_URL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  contact      String?
+  phone        String?
+  email        String?
+  creditLimit  Decimal? @default(0)
+  remark       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 建档扩展
+  customerType String   @default("COMPANY")  // INDIVIDUAL / COMPANY
+  sourceType   String   @default("DIRECT")   // PEER（同行）/ DIRECT（直客）
+  idNumber     String?  // 身份证号（个人）
+  taxCode      String?  // 统一社会信用代码（公司）
+  priceRate    Decimal  @default(1.00)        // 直客加价率，如 1.15 表示成本价×1.15
+
+  orders       Order[]
+  addresses    CustomerAddress[]
+
+  @@index([name])
+  @@index([sourceType])
+}
+
+// 客户多地址
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  label      String   @default("默认")  // 收货地址 / 发货地址 / 仓库…
+  contact    String?
+  phone      String?
+  province   String?
+  city       String?
+  address    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNo     String   @unique
+  customerId  String
+  channel     String   // EXPRESS / LINE / AIR / SEA / FBA / IMPORT
+  origin      String   @default("SZX 深圳")
+  destination String
+  weight      Decimal  @default(0)
+  volume      Decimal? @default(0)
+  pieces      Int?     @default(1)
+  status      String   @default("DRAFT") // DRAFT / SUBMITTED / IN_TRANSIT / CUSTOMS / DELIVERED / CANCELED
+  remark      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 新增字段
+  direction   String   @default("EXPORT")   // EXPORT / IMPORT
+  trackingNo  String?                        // 运单号/快递单号
+  sourceType  String   @default("DIRECT")   // 来源：PEER（同行）/ DIRECT（直客）
+
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  fees            OrderFee[]
+  trackingEvents  TrackingEvent[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([direction])
+  @@index([createdAt])
+}
+
+// 货物跟踪时间轴
+model TrackingEvent {
+  id          String   @id @default(cuid())
+  orderId     String
+  eventTime   DateTime
+  location    String?  // 节点位置（如：深圳口岸 / 香港机场 / 目的国海关）
+  status      String   // RECEIVED / IN_TRANSIT / CUSTOMS / ARRIVED / DELIVERED / EXCEPTION
+  description String   // 轨迹描述
+  operator    String?  // 录入人
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([eventTime])
+}
+
+model OrderFee {
+  id               String    @id @default(cuid())
+  orderId          String
+  feeType          String    // FREIGHT / FUEL / SURCHARGE / CUSTOMS / OTHER
+  amount           Decimal   @default(0)
+  currency         String    @default("CNY")
+  remark           String?
+  createdAt        DateTime  @default(now())
+
+  // 财务结算字段
+  settlementStatus String    @default("PENDING")  // PENDING / SETTLED / CANCELLED
+  settledAt        DateTime?
+  settledBy        String?   // 结算人
+
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([settlementStatus])
+}
+
+// 财务结算单（批量结算）
+model Settlement {
+  id          String   @id @default(cuid())
+  title       String                        // 如：2026年4月客户对账单
+  period      String                        // 如：2026-04
+  customerId  String?                       // 关联客户（可为空=汇总结算）
+  totalAmount Decimal  @default(0)
+  currency    String   @default("CNY")
+  status      String   @default("DRAFT")   // DRAFT / CONFIRMED / PAID
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       SettlementItem[]
+
+  @@index([customerId])
+  @@index([period])
+  @@index([status])
+}
+
+// 结算单明细行
+model SettlementItem {
+  id             String   @id @default(cuid())
+  settlementId   String
+  orderId        String
+  orderFeeId     String?
+  description    String
+  amount         Decimal  @default(0)
+  currency       String   @default("CNY")
+
+  settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([orderId])
+}
+
+// ======= 渠道管理 =======
+
+// 渠道主表
+model Channel {
+  id                 String   @id @default(cuid())
+  channelKey         String   @unique  // 原接口 ChannelKey（UUID），手动录入可自动生成
+  channelName        String            // 渠道名称
+  channelCode        String?           // 渠道代码
+  supplierName       String?           // 供应商名称
+  modeCode           String            // DHL-HK / UPS-CN / FEDEX-HK 等
+  channelTypeCode    Int      @default(1) // 1=直发 6=小货等
+  currency           Int      @default(1) // 1=CNY 3=HKD
+  startCityKey       String?           // 起运地 UUID
+  startCityName      String?           // 起运地名称
+  countryKey         String?           // 目的国 UUID
+  countryCode        String?           // US/GB/DE...
+  countryName        String?           // 目的国中文名
+  workDays           Int      @default(7)  // 时效（工作日）
+  cargoTypeInfo      String?           // 可接货物（逗号分隔中文名）
+  volumnBase         Int      @default(5000) // 材积除数
+  isTax              Boolean  @default(false)
+  channelDescription String?           // 渠道说明
+  riskWarning        String?           // 风险提示
+  batteryNotice      String?           // 带电要求
+  serviceType        String?           // 服务类型文字（UPS特快/红单速快 等）
+  pricePerKg         Decimal  @default(0)  // 每KG基准价（参考报价，真实价格由报价引擎算）
+  minWeight          Decimal  @default(0.5) // 最低计费重KG
+  wareFlightDesc     String?           // 排仓说明
+  flightDesc         String?           // 航班说明
+  wareShortCode      String?           // 仓库代码
+  isActive           Boolean  @default(true)  // 是否启用
+  validStartDate     DateTime?
+  validEndDate       DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  fees               ChannelFee[]
+  labels             ChannelLabelRel[]
+
+  @@index([modeCode])
+  @@index([countryCode])
+  @@index([isActive])
+}
+
+// 渠道附加费（可多条：排仓费/预录费/国际加工费等）
+model ChannelFee {
+  id          String  @id @default(cuid())
+  channelId   String
+  feeName     String          // 费用名称
+  feeUnit     Int    @default(1) // 1=票 2=KG
+  price       Decimal @default(0)
+  isAddFreight Boolean @default(true) // 是否计入运费
+
+  channel     Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+}
+
+// 渠道特色标签
+model ChannelLabel {
+  id        Int    @id @default(autoincrement())
+  labelName String @unique  // 免偏远费 / 材积除6000 / 免住宅费 等
+  isPublic  Boolean @default(true)
+
+  channels  ChannelLabelRel[]
+}
+
+// 渠道 ↔ 标签 多对多
+model ChannelLabelRel {
+  channelId   String
+  labelId     Int
+
+  channel     Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  label       ChannelLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, labelId])
+}

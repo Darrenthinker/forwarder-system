@@ -1,0 +1,88 @@
+name: 自动部署
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      # 把 schema 里的 sqlite 替换成 postgresql
+      - name: 切换数据库为 PostgreSQL
+        run: sed -i 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma
+
+      - name: 生成 Prisma Client
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm prisma generate
+
+      - name: 构建项目
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm build
+
+      # ============ 方案A：部署到 Zeabur（托管，无需后续步骤）============
+      # Zeabur 直接监听 GitHub，push 即部署，无需 workflow 里配置
+
+      # ============ 方案B：SSH 推送到宝塔服务器 ============
+      - name: 打包构建产物
+        run: tar -czf dist.tar.gz .next/standalone .next/static public prisma
+
+      - name: 上传并部署到服务器
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DATABASE_URL
+          script: |
+            set -e
+            DEPLOY_DIR=/www/wwwroot/forwarder-system
+
+            # 解压新版本
+            cd $DEPLOY_DIR
+            tar -xzf /tmp/dist.tar.gz
+
+            # 复制静态文件到 standalone 目录
+            cp -r .next/static .next/standalone/.next/static
+            cp -r public .next/standalone/public
+
+            # 执行数据库迁移
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            ./node_modules/.bin/prisma migrate deploy
+
+            # 重启服务
+            pm2 restart forwarder-system 2>/dev/null || \
+              pm2 start .next/standalone/server.js \
+                --name forwarder-system \
+                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+                -- --port 6419
+
+            echo "✅ 部署成功 $(date)"
+
+      - name: 上传构建产物到服务器
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: dist.tar.gz
+          target: /tmp/

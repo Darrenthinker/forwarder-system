@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "source": "by56.com 中文版快递下单-新版 / ChannelInvoice.ashx",
+    "captured_at": "2026-04-19",
+    "query_summary": "深圳市 → 美国, 普货, 1件 15KG 0CBM",
+    "purpose": "查价接口字段结构 + 真实渠道样本数据。仅用于本系统数据建模/UI 还原参考。"
+  },
+  "_request_template": {
+    "url": "POST /ajax/ChannelInvoice.ashx",
+    "action": "QueryPrice",
+    "obj": {
+      "CustomerID": "客户ID",
+      "StartCityKey": "起运地 UUID",
+      "CountryKey": "目的国 UUID",
+      "PacketType": "包裹类型 (1=出口业务)",
+      "QueryType": "查价类型 (1)",
+      "Quanlity": "数量 (sic: typo of Quantity)",
+      "Weight": "重量 KG",
+      "CBM": "体积 m³",
+      "GoodName": "货物名 e.g. 普货",
+      "CargoTypeIDs": ["货物分类ID 数组"],
+      "ChannelType": "1=出口/2=进口",
+      "ChannelTypeInfos": "渠道大类 1-6 逗号串",
+      "ChannelName": "搜索关键字",
+      "ModeCodes": ["DHL","UPS","FEDEX","ARAMEX","EMS","DPD","SF","3PE"],
+      "StartCityKeyRes": [],
+      "ChannelLabelID": [],
+      "GoodInfos": [],
+      "Take": 20,
+      "Skip": 0,
+      "OrderBy": "price"
+    }
+  },
+  "_field_dictionary": {
+    "Currency": { "1": "CNY 人民币", "3": "HKD 港币", "其它": "需补充" },
+    "ChannelTypeCode": { "1": "国际快递（直发）", "6": "国际快递（小货）", "其他": "需补充" },
+    "ChannelOwnerType": { "1": "供应商渠道" },
+    "PacketType": { "1": "出口业务" },
+    "FeeUnit": { "1": "票", "2": "KG（按计费重）" },
+    "BatteryType": { "2": "内置电池", "3": "配套电池", "4": "电池本身" },
+    "VolumnBase": "材积除数 e.g. 5000 表示 长×宽×高(cm)/5000=KG"
+  },
+  "_response_summary": {
+    "Total": 27,
+    "Channels_in_sample": 20,
+    "Top_modes": ["DHL-HK", "UPS-CN", "UPS-HK", "FEDEX-HK"],
+    "Top_suppliers": ["中技物流", "深圳市迅捷国际货运代理有限公司", "深圳市众鑫邦国际货运代理有限公司"],
+    "Common_labels": ["免住宅费", "免偏远费", "超重费用有打折", "免超长费", "材积除6000", "免关税预付手续费", "免更改地址费", "体积除5800", "材积除7000"]
+  }
+}
