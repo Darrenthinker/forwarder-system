@@ -175,7 +175,7 @@ export const MENU: MenuSection[] = [
     icon: Truck,
     defaultOpen: false,
     children: [
-      { label: "产品", href: "/settings/channels", done: true },
+      { label: "产品管理", href: "/settings/channels", done: true },
     ],
   },
 ];
