@@ -132,8 +132,7 @@ export function TabBar() {
                 href={tab.href}
                 title={tab.closable ? tab.title : "返回首页"}
                 className={cn(
-                  "flex items-center text-xs whitespace-nowrap select-none transition-colors h-full",
-                  tab.closable ? "px-3 py-2" : "px-3",
+                  "flex items-center text-xs whitespace-nowrap select-none transition-colors h-full px-3 py-2",
                   tab.closable && "pr-7",
                   active
                     ? "bg-brand-50 text-brand border-b-2 border-b-brand"
@@ -141,7 +140,7 @@ export function TabBar() {
                 )}
               >
                 {!tab.closable ? (
-                  <Home className="w-3.5 h-3.5" />
+                  <Home className="w-4 h-4" />
                 ) : (
                   <span className="max-w-[200px] truncate">{tab.title}</span>
                 )}
