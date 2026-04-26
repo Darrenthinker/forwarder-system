@@ -168,14 +168,14 @@ export const MENU: MenuSection[] = [
     ],
   },
 
-  // ============ 渠道 ============
+  // ============ 产品 ============
   {
     id: "channels",
-    label: "渠道",
+    label: "产品",
     icon: Truck,
     defaultOpen: false,
     children: [
-      { label: "渠道管理", href: "/settings/channels", done: true },
+      { label: "产品", href: "/settings/channels", done: true },
     ],
   },
 ];

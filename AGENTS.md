@@ -111,3 +111,41 @@ Forwarder System/
 3. 改动后必须能 `pnpm build` 通过
 4. 不要乱加依赖；新增依赖先看 `package.json` 是否已有
 5. 遇到产品/业务不清楚的问题，先问用户，不要猜
+
+## 11. 部署 / Git 同步约定（重要！）
+
+### 用户的口头指令 → 自动动作
+
+| 用户说的话 | Agent 自动做 |
+|-----------|-------------|
+| **"同步到 Git"** / **"同步到 git"** / **"提交并部署"** / **"上线"** / **"deploy"** | 自动执行 `pnpm deploy`，不用再问 |
+| "查日志" / "看运行状态" | `ssh ... pm2 logs forwarder` |
+| "立即备份" | `ssh ... bash scripts/backup-mysql.sh` |
+
+### 一键部署命令
+```powershell
+pnpm deploy   # = scripts/push-deploy.ps1，自动 git push + 远程构建 + 重启 + 健康检查
+```
+
+### 生产环境
+- 域名：**https://dtms.huodaiagent.com**
+- 服务器：阿里云 ECS `114.55.12.15`（Ubuntu 22.04, Node 20）
+- 项目目录：`/www/forwarder-system`
+- 数据库：阿里云 RDS MySQL `rm-bp19c413117y10tq0.mysql.rds.aliyuncs.com`
+- HTTPS：Let's Encrypt 自动续期
+- 守护进程：PM2 (`forwarder`)
+- 反向代理：Nginx 80/443 → 6419
+- 自动备份：每天 3:00 凌晨，保留 7 天 → `/www/backups/forwarder/`
+- SSH 私钥：`E:\keys\仰度系统\仰度系统.pem`
+- GitHub：https://github.com/Darrenthinker/forwarder-system （public）
+
+### 关键差异：本地 vs 生产
+| | 本地（dev） | 生产（prod） |
+|---|---|---|
+| 数据库 | SQLite (`prisma/dev.db`) | MySQL (RDS) |
+| `prisma/schema.prisma` provider | `sqlite` | `mysql`（手动改）|
+| `.env` `DATABASE_URL` | `file:./dev.db` | `mysql://...` |
+
+⚠️ **本地 schema.prisma 永远保持 `provider = "sqlite"`**。生产服务器上的 schema.prisma 是 mysql 版本（已手动改过），git pull 不会覆盖它（因为 git 也只追踪 sqlite 版本）。
+
+如果本地 schema 改了模型字段，部署到生产时，`scripts/deploy.sh` 自动跑 `prisma db push --accept-data-loss` 同步到 MySQL。生产 schema.prisma 文件会被 git 拉过去（因为 git 跟踪它），所以**deploy 后服务器上的 schema 也会变回 sqlite**！需要在 deploy.sh 里处理（见 TODO）。

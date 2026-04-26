@@ -10,6 +10,11 @@ echo "=== [1/5] 拉取最新代码 ==="
 git fetch origin main
 git reset --hard origin/main
 
+# 关键：本地 schema.prisma 是 sqlite（开发用），生产必须切到 mysql
+sed -i 's|provider = "sqlite"|provider = "mysql"\n  relationMode = "prisma"|' prisma/schema.prisma
+echo "✓ schema.prisma 已切换为 mysql 模式"
+head -12 prisma/schema.prisma
+
 echo "=== [2/5] 安装依赖 ==="
 pnpm install --prod=false --frozen-lockfile=false
 
