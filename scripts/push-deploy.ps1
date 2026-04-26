@@ -36,7 +36,8 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "[2/3] Remote deploy (pull / build / restart)..." -ForegroundColor Cyan
-ssh -i $KEY $HOST_ADDR "cd $REMOTE_DIR && bash scripts/deploy.sh"
+# First sync code (so deploy.sh is up to date), then run it
+ssh -i $KEY $HOST_ADDR "cd $REMOTE_DIR && git fetch origin main && git reset --hard origin/main && chmod +x scripts/deploy.sh && bash scripts/deploy.sh"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[X] remote deploy failed" -ForegroundColor Red
     exit 1
