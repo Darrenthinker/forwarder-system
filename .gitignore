@@ -31,3 +31,6 @@ Thumbs.db
 # 临时排除 workflow（PAT 缺 workflow 权限），以后单独添加
 .github/workflows/
 
+# 部署临时文件
+.deploy-tmp/
+
