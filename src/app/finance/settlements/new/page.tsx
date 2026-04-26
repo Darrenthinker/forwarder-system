@@ -4,17 +4,19 @@ import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
 import { createSettlement } from "../actions";
 
-const initial = {};
+type FormState = { error?: string } | Record<string, never>;
+const initial: FormState = {};
 
 export default function NewSettlementPage() {
   const [state, action] = useFormState(createSettlement, initial);
   const today = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const errMsg = "error" in state ? state.error : undefined;
 
   return (
     <form action={action} className="space-y-4 max-w-2xl">
-      {"error" in state && state.error && (
+      {errMsg && (
         <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">
-          {state.error as string}
+          {errMsg}
         </div>
       )}
 

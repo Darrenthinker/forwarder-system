@@ -3,7 +3,8 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { addTrackingEvent } from "./tracking-actions";
 
-const initial = {};
+type FormState = { error?: string } | Record<string, never>;
+const initial: FormState = {};
 
 const STATUSES = [
   { v: "RECEIVED",   l: "已收货" },
@@ -16,14 +17,15 @@ const STATUSES = [
 
 export function AddTrackingForm({ orderId }: { orderId: string }) {
   const [state, action] = useFormState(addTrackingEvent, initial);
+  const errMsg = "error" in state ? state.error : undefined;
 
   return (
     <form action={action} className="border-t border-slate-100 pt-4 space-y-3">
       <h3 className="text-sm font-medium text-slate-600">录入轨迹</h3>
       <input type="hidden" name="orderId" value={orderId} />
 
-      {"error" in state && state.error && (
-        <p className="text-xs text-red-500">{state.error as string}</p>
+      {errMsg && (
+        <p className="text-xs text-red-500">{errMsg}</p>
       )}
 
       <div className="grid grid-cols-2 gap-3">

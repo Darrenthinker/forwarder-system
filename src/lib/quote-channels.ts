@@ -130,7 +130,7 @@ export function searchChannels(params: QuoteParams): {
   const cargoSet = new Set((params.cargoTypeIds ?? []).map((x) => x.trim()));
   const modeSet = new Set((params.modeCodes ?? []).map((x) => x.trim().toUpperCase()));
 
-  const cargoLabelById = new Map(CARGO_TYPE_OPTIONS.map((x) => [x.id, x.label]));
+  const cargoLabelById = new Map<string, string>(CARGO_TYPE_OPTIONS.map((x) => [x.id, x.label]));
 
   const items: QuoteResultItem[] = [];
   for (const c of RAW_CHANNELS) {

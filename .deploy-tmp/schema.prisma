@@ -1,0 +1,222 @@
+// Forwarder System Prisma Schema - PRODUCTION (MySQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  contact      String?
+  phone        String?
+  email        String?
+  creditLimit  Decimal? @default(0)
+  remark       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customerType String   @default("COMPANY")
+  sourceType   String   @default("DIRECT")
+  idNumber     String?
+  taxCode      String?
+  priceRate    Decimal  @default(1.00)
+
+  orders       Order[]
+  addresses    CustomerAddress[]
+
+  @@index([name])
+  @@index([sourceType])
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  label      String   @default("默认")
+  contact    String?
+  phone      String?
+  province   String?
+  city       String?
+  address    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNo     String   @unique
+  customerId  String
+  channel     String
+  origin      String   @default("SZX 深圳")
+  destination String
+  weight      Decimal  @default(0)
+  volume      Decimal? @default(0)
+  pieces      Int?     @default(1)
+  status      String   @default("DRAFT")
+  remark      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  direction   String   @default("EXPORT")
+  trackingNo  String?
+  sourceType  String   @default("DIRECT")
+
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  fees            OrderFee[]
+  trackingEvents  TrackingEvent[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([direction])
+  @@index([createdAt])
+}
+
+model TrackingEvent {
+  id          String   @id @default(cuid())
+  orderId     String
+  eventTime   DateTime
+  location    String?
+  status      String
+  description String
+  operator    String?
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([eventTime])
+}
+
+model OrderFee {
+  id               String    @id @default(cuid())
+  orderId          String
+  feeType          String
+  amount           Decimal   @default(0)
+  currency         String    @default("CNY")
+  remark           String?
+  createdAt        DateTime  @default(now())
+
+  settlementStatus String    @default("PENDING")
+  settledAt        DateTime?
+  settledBy        String?
+
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([settlementStatus])
+}
+
+model Settlement {
+  id          String   @id @default(cuid())
+  title       String
+  period      String
+  customerId  String?
+  totalAmount Decimal  @default(0)
+  currency    String   @default("CNY")
+  status      String   @default("DRAFT")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       SettlementItem[]
+
+  @@index([customerId])
+  @@index([period])
+  @@index([status])
+}
+
+model SettlementItem {
+  id             String   @id @default(cuid())
+  settlementId   String
+  orderId        String
+  orderFeeId     String?
+  description    String
+  amount         Decimal  @default(0)
+  currency       String   @default("CNY")
+
+  settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([orderId])
+}
+
+model Channel {
+  id                 String   @id @default(cuid())
+  channelKey         String   @unique
+  channelName        String
+  channelCode        String?
+  supplierName       String?
+  modeCode           String
+  channelTypeCode    Int      @default(1)
+  currency           Int      @default(1)
+  startCityKey       String?
+  startCityName      String?
+  countryKey         String?
+  countryCode        String?
+  countryName        String?
+  workDays           Int      @default(7)
+  cargoTypeInfo      String?
+  volumnBase         Int      @default(5000)
+  isTax              Boolean  @default(false)
+  channelDescription String?
+  riskWarning        String?
+  batteryNotice      String?
+  serviceType        String?
+  pricePerKg         Decimal  @default(0)
+  minWeight          Decimal  @default(0.5)
+  wareFlightDesc     String?
+  flightDesc         String?
+  wareShortCode      String?
+  isActive           Boolean  @default(true)
+  validStartDate     DateTime?
+  validEndDate       DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  fees               ChannelFee[]
+  labels             ChannelLabelRel[]
+
+  @@index([modeCode])
+  @@index([countryCode])
+  @@index([isActive])
+}
+
+model ChannelFee {
+  id          String  @id @default(cuid())
+  channelId   String
+  feeName     String
+  feeUnit     Int    @default(1)
+  price       Decimal @default(0)
+  isAddFreight Boolean @default(true)
+
+  channel     Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+}
+
+model ChannelLabel {
+  id        Int    @id @default(autoincrement())
+  labelName String @unique
+  isPublic  Boolean @default(true)
+
+  channels  ChannelLabelRel[]
+}
+
+model ChannelLabelRel {
+  channelId   String
+  labelId     Int
+
+  channel     Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  label       ChannelLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, labelId])
+}
