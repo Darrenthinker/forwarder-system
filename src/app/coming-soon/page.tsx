@@ -61,6 +61,28 @@ const FEATURES: Record<string, { title: string; desc: string; section?: string }
   "fx": { title: "汇率查询", desc: "多币种汇率查询与维护", section: "账单" },
   "make-bill": { title: "制作账单(新)", desc: "新版账单制作向导", section: "账单" },
   "make-bill-parcel": { title: "制作账单(小包)", desc: "小包专属账单制作", section: "账单" },
+
+  // 顶部导航占位模块
+  "system": {
+    title: "系统",
+    desc: "组织架构、账号权限、操作日志、参数设置等系统级管理功能。当前还在 MVP 阶段，等业务流程稳定后再做。",
+    section: "顶部模块",
+  },
+  "content": {
+    title: "内容",
+    desc: "公告、Banner、官网文章、产品介绍页、客户公告板等内容管理。",
+    section: "顶部模块",
+  },
+  "marketing": {
+    title: "营销",
+    desc: "优惠券、节日活动、新客首单优惠、客户分群推送等营销工具。",
+    section: "顶部模块",
+  },
+  "reports": {
+    title: "报表中心",
+    desc: "经营看板：客户应收、订单利润、业务员业绩、流失预警 — 数据从订单/费用/客户表自动汇总。",
+    section: "顶部模块",
+  },
 };
 
 export default function ComingSoonPage({ searchParams }: { searchParams: { f?: string } }) {

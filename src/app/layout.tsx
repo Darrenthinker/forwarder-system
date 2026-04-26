@@ -14,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body>
-        <Header />
+        <Suspense fallback={<header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30" />}>
+          <Header />
+        </Suspense>
         <div className="flex">
           <Suspense fallback={<aside className="w-60 shrink-0 border-r border-slate-200 bg-white" />}>
             <Sidebar />
