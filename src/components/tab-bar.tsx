@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, MouseEvent, WheelEvent } from "react";
-import {
-  Home,
-  X,
-  RefreshCw,
-  ChevronDown,
-  ListChecks,
-} from "lucide-react";
+import { Home, X } from "lucide-react";
 import { MENU } from "@/lib/menu";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +38,7 @@ export function TabBar() {
 
   const [tabs, setTabs] = useState<Tab[]>([HOME_TAB]);
   const [hydrated, setHydrated] = useState(false);
-  const [showAllMenu, setShowAllMenu] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const allMenuRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,18 +89,6 @@ export function TabBar() {
     });
   }, [fullPath, hydrated, tabs.length]);
 
-  // 点击外面关闭"全部 Tab" 下拉
-  useEffect(() => {
-    if (!showAllMenu) return;
-    const handler = (e: globalThis.MouseEvent) => {
-      if (!allMenuRef.current?.contains(e.target as Node)) {
-        setShowAllMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showAllMenu]);
-
   // 鼠标滚轮 → 横向滚动 Tab 栏
   const onWheel = (e: WheelEvent<HTMLDivElement>) => {
     const el = scrollerRef.current;
@@ -131,19 +111,6 @@ export function TabBar() {
       return next;
     });
   };
-
-  const closeOthers = () => {
-    setTabs((prev) => prev.filter((t) => !t.closable || t.key === fullPath));
-    setShowAllMenu(false);
-  };
-
-  const closeAll = () => {
-    setTabs([HOME_TAB]);
-    router.push("/");
-    setShowAllMenu(false);
-  };
-
-  const openTabsCount = tabs.filter((t) => t.closable).length;
 
   return (
     <div className="bg-white border-b border-slate-200 flex items-stretch sticky top-14 z-20">
@@ -197,104 +164,6 @@ export function TabBar() {
         })}
       </div>
 
-      {/* 右侧操作区 */}
-      <div className="flex items-stretch border-l border-slate-100 shrink-0">
-        <button
-          type="button"
-          onClick={() => router.refresh()}
-          className="px-2.5 text-slate-400 hover:text-brand hover:bg-slate-50 transition-colors"
-          title="刷新当前页"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
-
-        {/* 全部 Tab 下拉 */}
-        <div className="relative" ref={allMenuRef}>
-          <button
-            type="button"
-            onClick={() => setShowAllMenu((s) => !s)}
-            className={cn(
-              "h-full px-2 flex items-center gap-1 text-slate-500 hover:text-brand hover:bg-slate-50 border-l border-slate-100 transition-colors",
-              showAllMenu && "text-brand bg-slate-50"
-            )}
-            title={`全部 Tab（${openTabsCount}）`}
-          >
-            <ListChecks className="w-4 h-4" />
-            {openTabsCount > 0 && (
-              <span className="text-xs tabular-nums">{openTabsCount}</span>
-            )}
-            <ChevronDown
-              className={cn(
-                "w-3 h-3 transition-transform",
-                showAllMenu && "rotate-180"
-              )}
-            />
-          </button>
-          {showAllMenu && (
-            <div className="absolute right-0 top-full mt-1 w-72 max-h-96 overflow-y-auto bg-white border border-slate-200 rounded-md shadow-lg z-30">
-              <div className="px-3 py-2 text-xs text-slate-400 border-b border-slate-100 sticky top-0 bg-white flex items-center justify-between">
-                <span>已打开的 Tab（{tabs.length}）</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={closeOthers}
-                    className="hover:text-brand"
-                    disabled={openTabsCount === 0}
-                  >
-                    关闭其它
-                  </button>
-                  <span className="text-slate-200">|</span>
-                  <button
-                    type="button"
-                    onClick={closeAll}
-                    className="hover:text-brand"
-                    disabled={openTabsCount === 0}
-                  >
-                    全部关闭
-                  </button>
-                </div>
-              </div>
-              {tabs.length === 0 && (
-                <div className="px-3 py-4 text-xs text-slate-400 text-center">
-                  暂无 Tab
-                </div>
-              )}
-              {tabs.map((tab) => {
-                const active = tab.key === fullPath;
-                return (
-                  <div
-                    key={tab.key}
-                    className={cn(
-                      "flex items-center px-3 py-2 text-xs hover:bg-slate-50 transition-colors group/row",
-                      active && "bg-brand-50 text-brand"
-                    )}
-                  >
-                    <Link
-                      href={tab.href}
-                      onClick={() => setShowAllMenu(false)}
-                      className="flex-1 truncate flex items-center gap-2"
-                      title={tab.title}
-                    >
-                      {!tab.closable && <Home className="w-3 h-3 shrink-0" />}
-                      <span className="truncate">{tab.title}</span>
-                    </Link>
-                    {tab.closable && (
-                      <button
-                        type="button"
-                        onClick={(e) => closeTab(tab.key, e)}
-                        className="ml-2 p-0.5 rounded text-slate-300 hover:text-slate-700 hover:bg-slate-200 opacity-0 group-hover/row:opacity-100 transition-opacity"
-                        title="关闭"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
